@@ -1,4 +1,4 @@
-package com.itgr.lgpicturebackend.model.dto;
+package com.itgr.lgpicturebackend.model.dto.user;
 
 import lombok.Data;
 
