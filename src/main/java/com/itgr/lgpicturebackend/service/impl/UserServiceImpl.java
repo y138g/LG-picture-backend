@@ -3,6 +3,7 @@ package com.itgr.lgpicturebackend.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestAlgorithm;
 import cn.hutool.crypto.digest.Digester;
@@ -67,29 +68,37 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         ThrowUtils.throwIf(userPassword.length() < 8 || userPassword.length() > 32,
                 new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度不小于8位或不能大于32位"));
 
-        // 5. 校验账号是否重复
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("userAccount", userAccount);
-        ThrowUtils.throwIf(this.baseMapper.selectCount(queryWrapper) > 0,
-                new BusinessException(ErrorCode.PARAMS_ERROR, "账号已存在"));
+        synchronized (userAccount.intern()) {
+            // 5. 校验账号是否重复
+            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("userAccount", userAccount);
+            ThrowUtils.throwIf(this.baseMapper.selectCount(queryWrapper) > 0,
+                    new BusinessException(ErrorCode.PARAMS_ERROR, "账号已存在"));
 
-        // 6. 密码加密
-        String encryptPassword = encryptPassword(userPassword);
+            // 6. 密码加密
+            String encryptPassword = encryptPassword(userPassword);
 
-        // 7. 用户编号生成
-        int createNum = generateCreateNum();
+            // 7. 用户编号生成
+            int createNum;
+            synchronized (this) {
+                createNum = generateCreateNum();
+            }
 
-        // 8. 插入数据
-        User needUser = new User();
-        needUser.setUserAccount(userRegisterRequest.getUserAccount());
-        needUser.setUserPassword(encryptPassword);
-        needUser.setUserName(userRegisterRequest.getUserName());
-        needUser.setUserRole(UserRoleEnum.USER.getValue());
-        needUser.setCreateNum(String.valueOf(createNum));
-        ThrowUtils.throwIf(!this.save(needUser), new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败"));
+            // 8. 插入数据
+            User needUser = new User();
+            needUser.setUserAccount(userRegisterRequest.getUserAccount());
+            needUser.setUserPassword(encryptPassword);
+            // 默认生成用户名为用户+随机数
+            String userName = "用户" + RandomUtil.randomString(5);
+            needUser.setUserName(userName);
+            needUser.setUserRole(UserRoleEnum.USER.getValue());
+            needUser.setCreateNum(String.valueOf(createNum));
+            ThrowUtils.throwIf(!this.save(needUser), new BusinessException(ErrorCode.SYSTEM_ERROR, "注册失败"));
 
-        // 9. 返回新增用户 id
-        return needUser.getId();
+            // 9. 返回新增用户 id
+            return needUser.getId();
+
+        }
     }
 
     @Override
@@ -110,7 +119,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         queryWrapper.eq("userAccount", userAccount);
         queryWrapper.eq("userPassword", encryptPassword(userPassword));
         User user = this.baseMapper.selectOne(queryWrapper);
-        ThrowUtils.throwIf(ObjUtil.isEmpty(user), new BusinessException(ErrorCode.SYSTEM_ERROR, "系统异常"));
+        ThrowUtils.throwIf(ObjUtil.isEmpty(user), new BusinessException(ErrorCode.SYSTEM_ERROR, "账号不存在或密码错误"));
 
         LoginUserVO loginUserVO = getLoginUserVO(user);
         request.getSession().setAttribute(UserConstant.LOGIN_USER_KEY, loginUserVO);
@@ -182,7 +191,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空"));
 
         // 2. 构造查询条件
-        Long id = userQueryRequest.getId();
+        Long id = userQueryRequest.getId() == null ? 0 : userQueryRequest.getId();
         String userAccount = userQueryRequest.getUserAccount();
         String createNum = userQueryRequest.getCreateNum();
         String userName = userQueryRequest.getUserName();

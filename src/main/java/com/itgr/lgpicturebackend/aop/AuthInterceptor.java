@@ -54,11 +54,12 @@ public class AuthInterceptor {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         // 信技部成员才能操作
-        if (UserRoleEnum.GL_USER.equals(userRoleEnum) && !UserRoleEnum.GL_USER.equals(mustRoleEnum)) {
+        if (!UserRoleEnum.ROOT.equals(userRoleEnum) &&
+                (!UserRoleEnum.GL_USER.equals(userRoleEnum) && UserRoleEnum.GL_USER.equals(mustRoleEnum))) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         // 有管理员权限才能操作
-        if (UserRoleEnum.ROOT.equals(userRoleEnum) && !UserRoleEnum.ROOT.equals(mustRoleEnum)) {
+        if (!UserRoleEnum.ROOT.equals(userRoleEnum) && UserRoleEnum.ROOT.equals(mustRoleEnum)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         return joinPoint.proceed();

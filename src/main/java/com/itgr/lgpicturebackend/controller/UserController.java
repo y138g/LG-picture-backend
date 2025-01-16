@@ -63,7 +63,7 @@ public class UserController {
      */
     @PostMapping("/login")
     public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest,
-                                              HttpServletRequest request) {
+                                               HttpServletRequest request) {
         ThrowUtils.throwIf(ObjUtil.isEmpty(userLoginRequest),
                 new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空"));
         LoginUserVO loginUserVO = userService.loginUser(userLoginRequest, request);
@@ -152,8 +152,8 @@ public class UserController {
     @PostMapping("/root/list/page/vo")
     public BaseResponse<Page<UserVO>> listUserVOByPage(@RequestBody UserQueryRequest userQueryRequest) {
         ThrowUtils.throwIf(userQueryRequest == null, ErrorCode.PARAMS_ERROR);
-        long current = userQueryRequest.getPage();
-        long pageSize = userQueryRequest.getSize();
+        long current = userQueryRequest.getCurrent();
+        long pageSize = userQueryRequest.getPageSize();
         Page<User> userPage = userService.page(new Page<>(current, pageSize),
                 userService.getQueryWrapper(userQueryRequest));
         Page<UserVO> userVOPage = new Page<>(current, pageSize, userPage.getTotal());
