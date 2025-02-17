@@ -41,6 +41,12 @@
             <artifactId>hutool-all</artifactId>
             <version>5.8.26</version>
         </dependency>
+        <!-- 对象存储 cos：https://cloud.tencent.com/document/product/436/10199-->
+        <dependency>
+            <groupId>com.qcloud</groupId>
+            <artifactId>cos_api</artifactId>
+            <version>5.6.227</version>
+        </dependency>
         <!-- 接口文档：https://doc.xiaominfo.com/docs/quick-start#spring-boot-2-->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
